@@ -1,0 +1,54 @@
+{
+  "Rules": [
+    {"EntityType": "System", "Property": "DomainRole", "Severity": "Critical"},
+    {"EntityType": "System", "Property": "PartOfDomain", "Severity": "Critical"},
+    {"EntityType": "System", "Property": "Domain", "Severity": "Critical"},
+    {"EntityType": "System", "Property": "OSVersion", "Severity": "High"},
+    {"EntityType": "System", "Property": "OSBuild", "Severity": "High"},
+    {"EntityType": "System", "Property": "DNSServers", "Severity": "Medium"},
+    {"EntityType": "System", "Property": "TimeZone", "Severity": "Medium"},
+    
+    {"EntityType": "Service", "Property": "Status", "Severity": "Medium"},
+    {"EntityType": "Service", "Property": "StartType", "Severity": "Medium"},
+    
+    {"EntityType": "Feature", "Property": "Installed", "Severity": "High"},
+    {"EntityType": "Feature", "Property": "*", "Severity": "High"},
+    
+    {"EntityType": "Network", "Property": "Status", "Severity": "High"},
+    {"EntityType": "Network", "Property": "IPAddresses", "Severity": "High"},
+    {"EntityType": "Network", "Property": "MacAddress", "Severity": "Medium"},
+    {"EntityType": "Network", "Property": "TeamingMode", "Severity": "High"},
+    {"EntityType": "Network", "Property": "LoadBalancingAlgorithm", "Severity": "High"},
+    {"EntityType": "Network", "Property": "Members", "Severity": "Critical"},
+    
+    {"EntityType": "Storage", "Property": "HealthStatus", "Severity": "Critical"},
+    {"EntityType": "Storage", "Property": "OperationalStatus", "Severity": "Critical"},
+    {"EntityType": "Storage", "Property": "PartitionStyle", "Severity": "High"},
+    
+    {"EntityType": "Firewall", "Property": "Enabled", "Severity": "Critical"},
+    {"EntityType": "Firewall", "Property": "DefaultInboundAction", "Severity": "Critical"},
+    {"EntityType": "Firewall", "Property": "DefaultOutboundAction", "Severity": "High"},
+    {"EntityType": "Firewall", "Property": "Action", "Severity": "Medium"},
+    {"EntityType": "Firewall", "Property": "Direction", "Severity": "Medium"},
+    
+    {"EntityType": "ScheduledTask", "Property": "State", "Severity": "Medium"},
+    {"EntityType": "ScheduledTask", "Property": "Actions", "Severity": "Medium"},
+    {"EntityType": "ScheduledTask", "Property": "Triggers", "Severity": "Low"},
+    
+    {"EntityType": "LocalAccount", "Property": "Enabled", "Severity": "High"},
+    {"EntityType": "LocalAccount", "Property": "PasswordRequired", "Severity": "High"},
+    {"EntityType": "LocalAccount", "Property": "Members", "Severity": "High"},
+    
+    {"EntityType": "GroupPolicy", "Property": "AppliedGPOs", "Severity": "High"},
+    {"EntityType": "GroupPolicy", "Property": "FilteredGPOs", "Severity": "Medium"},
+    
+    {"EntityType": "Registry", "Property": "Values", "Severity": "Medium"},
+    {"EntityType": "Registry", "Property": "Exists", "Severity": "High"},
+    
+    {"EntityType": "Domain", "Property": "PartOfDomain", "Severity": "Critical"},
+    {"EntityType": "Domain", "Property": "Domain", "Severity": "Critical"},
+    {"EntityType": "Domain", "Property": "DomainControllerName", "Severity": "High"},
+    {"EntityType": "Domain", "Property": "Trusts", "Severity": "High"},
+    {"EntityType": "Domain", "Property": "TrustCount", "Severity": "High"}
+  ]
+}
