@@ -1,211 +1,93 @@
-#Requires -Version 7.0
-
 function New-WSSnapshot {
     <#
     .SYNOPSIS
-        Captures a snapshot of Windows Server configuration.
-    
+        Captures Windows Server configuration with explicit collection coverage.
     .DESCRIPTION
-        Collects detailed configuration data from a Windows Server 2022/2025 system including
-        system settings, services, features, network, storage, firewall, scheduled tasks,
-        local users/groups, group policy, registry settings, and domain membership.
-        
-        Supports both local and remote collection via PowerShell Remoting.
-    
-    .PARAMETER ComputerName
-        The computer name to capture snapshot from. Use localhost or omit for local machine.
-        For remote servers, PowerShell Remoting must be enabled.
-    
-    .PARAMETER Credential
-        Credentials for remote connection (if needed).
-    
-    .PARAMETER IncludeRegistry
-        Include important registry settings in snapshot.
-    
-    .PARAMETER IncludeScheduledTasks
-        Include scheduled tasks in snapshot.
-    
-    .PARAMETER IncludeGroupPolicy
-        Include applied Group Policy settings and RSoP data.
-    
-    .PARAMETER OutputPath
-        Path to export the snapshot JSON file. If not specified, returns snapshot object only.
-    
+        IncludeAll enables Registry, ScheduledTasks and GroupPolicy. Strict rejects
+        any requested applicable unit that does not succeed. Task arguments are
+        omitted unless the exact full task path is explicitly allowlisted.
     .EXAMPLE
-        PS> $snapshot = New-WSSnapshot -ComputerName localhost -OutputPath "baseline.json"
-        Captures a basic snapshot of the local server.
-    
+        New-WSSnapshot -ComputerName SERVER01 -IncludeAll -OutputPath baseline.json
     .EXAMPLE
-        PS> New-WSSnapshot -ComputerName SERVER01 -IncludeRegistry -IncludeGroupPolicy -IncludeScheduledTasks
-        Captures a comprehensive snapshot of remote server SERVER01.
-    
-    .NOTES
-        Requires PowerShell 7.0+.
-        For remote servers, requires PowerShell Remoting enabled.
-        Some collectors require elevated (Administrator) permissions.
+        New-WSSnapshot -IncludeScheduledTasks -TaskArgumentAllowList '\Ops\Reviewed task'
     #>
     [CmdletBinding()]
     param(
-        [Parameter()]
-        [string]$ComputerName = 'localhost',
-
-        [Parameter()]
+        [ValidateNotNullOrEmpty()][string]$ComputerName='localhost',
         [PSCredential]$Credential,
-
-        [Parameter()]
         [switch]$IncludeRegistry,
-
-        [Parameter()]
         [switch]$IncludeScheduledTasks,
-
-        [Parameter()]
         [switch]$IncludeGroupPolicy,
-
-        [Parameter()]
-        [string]$OutputPath
+        [string]$OutputPath,
+        [switch]$IncludeAll,
+        [switch]$Strict,
+        [string[]]$TaskArgumentAllowList=@()
     )
-
-    begin {
-        Write-Verbose "Starting snapshot capture from $ComputerName"
-        
-        # Establish session if remote
-        $session = $null
-        if ($ComputerName -ne 'localhost' -and $ComputerName -ne $env:COMPUTERNAME) {
-            try {
-                $sessionParams = @{
-                    ComputerName = $ComputerName
-                }
-                if ($Credential) {
-                    $sessionParams['Credential'] = $Credential
-                }
-                
-                $session = New-PSSession @sessionParams -ErrorAction Stop
-                Write-Verbose "Established remote session to $ComputerName"
-            }
-            catch {
-                throw "Failed to establish remote session: $_"
-            }
-        }
+    $session=$null
+    $argumentCoverage='Task arguments are omitted unless the exact full task path is allowlisted; omitted argument drift is not assessed.'
+    $registryCoverage='Known credential-bearing registry values are excluded by exact value names; their drift is not assessed. This policy does not identify arbitrary secrets.'
+    $allow=@($TaskArgumentAllowList | ForEach-Object {
+        if ([string]::IsNullOrWhiteSpace($_) -or -not $_.StartsWith('\') -or $_.EndsWith('\') -or $_ -match '[*?]') { throw 'TaskArgumentAllowList requires exact full task paths beginning with a backslash; wildcards and folder-only paths are invalid.' }
+        $_.ToLowerInvariant()
+    } | Sort-Object -Unique)
+    $options=@{
+        IncludeRegistry=([bool]$IncludeRegistry -or [bool]$IncludeAll)
+        IncludeScheduledTasks=([bool]$IncludeScheduledTasks -or [bool]$IncludeAll)
+        IncludeGroupPolicy=([bool]$IncludeGroupPolicy -or [bool]$IncludeAll)
+        TaskArgumentAllowList=$allow
+        RegistryPaths=@(Get-WSRegistryPaths)
+        Recurse=$true
     }
-
-    process {
-        try {
-            # Create snapshot object
-            $snapshot = [WSSnapshot]::new()
-
-            # Always collect System configuration
-            Write-Verbose "Collecting system configuration..."
-            $systemCollector = [SystemCollector]::new()
-            $systemEntities = $systemCollector.Collect($ComputerName, $session)
-            $snapshot.AddEntities($systemEntities)
-            
-            # Set snapshot metadata from system info
-            $sysProps = $systemEntities[0].Properties
-            $snapshot.ComputerName = $sysProps.ComputerName
-            $snapshot.OSVersion = $sysProps.OSVersion
-            $snapshot.OSBuild = $sysProps.OSBuild
-            Write-Verbose "Collected $($systemEntities.Count) system entities"
-
-            # Always collect Services
-            Write-Verbose "Collecting services..."
-            $serviceCollector = [ServiceCollector]::new()
-            $serviceEntities = $serviceCollector.Collect($ComputerName, $session)
-            $snapshot.AddEntities($serviceEntities)
-            Write-Verbose "Collected $($serviceEntities.Count) service entities"
-
-            # Always collect Features
-            Write-Verbose "Collecting Windows features..."
-            $featureCollector = [FeatureCollector]::new()
-            $featureEntities = $featureCollector.Collect($ComputerName, $session)
-            $snapshot.AddEntities($featureEntities)
-            Write-Verbose "Collected $($featureEntities.Count) feature entities"
-
-            # Always collect Network
-            Write-Verbose "Collecting network configuration..."
-            $networkCollector = [NetworkCollector]::new()
-            $networkEntities = $networkCollector.Collect($ComputerName, $session)
-            $snapshot.AddEntities($networkEntities)
-            Write-Verbose "Collected $($networkEntities.Count) network entities"
-
-            # Always collect Storage
-            Write-Verbose "Collecting storage configuration..."
-            $storageCollector = [StorageCollector]::new()
-            $storageEntities = $storageCollector.Collect($ComputerName, $session)
-            $snapshot.AddEntities($storageEntities)
-            Write-Verbose "Collected $($storageEntities.Count) storage entities"
-
-            # Always collect Firewall
-            Write-Verbose "Collecting firewall configuration..."
-            $firewallCollector = [FirewallCollector]::new()
-            $firewallEntities = $firewallCollector.Collect($ComputerName, $session)
-            $snapshot.AddEntities($firewallEntities)
-            Write-Verbose "Collected $($firewallEntities.Count) firewall entities"
-
-            # Always collect Local Users/Groups
-            Write-Verbose "Collecting local users and groups..."
-            $localCollector = [LocalUserGroupCollector]::new()
-            $localEntities = $localCollector.Collect($ComputerName, $session)
-            $snapshot.AddEntities($localEntities)
-            Write-Verbose "Collected $($localEntities.Count) local account entities"
-
-            # Always collect Domain information
-            Write-Verbose "Collecting domain membership..."
-            $domainCollector = [DomainCollector]::new()
-            $domainEntities = $domainCollector.Collect($ComputerName, $session)
-            $snapshot.AddEntities($domainEntities)
-            Write-Verbose "Collected $($domainEntities.Count) domain entities"
-
-            # Optional: Scheduled Tasks
-            if ($IncludeScheduledTasks) {
-                Write-Verbose "Collecting scheduled tasks..."
-                $taskCollector = [ScheduledTaskCollector]::new()
-                $taskEntities = $taskCollector.Collect($ComputerName, $session)
-                $snapshot.AddEntities($taskEntities)
-                Write-Verbose "Collected $($taskEntities.Count) scheduled task entities"
-            }
-
-            # Optional: Group Policy
-            if ($IncludeGroupPolicy) {
-                Write-Verbose "Collecting group policy settings..."
-                $gpCollector = [GroupPolicyCollector]::new()
-                $gpEntities = $gpCollector.Collect($ComputerName, $session)
-                $snapshot.AddEntities($gpEntities)
-                Write-Verbose "Collected $($gpEntities.Count) group policy entities"
-            }
-
-            # Optional: Registry
-            if ($IncludeRegistry) {
-                Write-Verbose "Collecting registry settings..."
-                $regCollector = [RegistryCollector]::new()
-                $regEntities = $regCollector.Collect($ComputerName, $session)
-                $snapshot.AddEntities($regEntities)
-                Write-Verbose "Collected $($regEntities.Count) registry entities"
-            }
-
-            # Add metadata
-            $snapshot.Metadata['CaptureParameters'] = @{
-                IncludeRegistry = $IncludeRegistry.IsPresent
-                IncludeScheduledTasks = $IncludeScheduledTasks.IsPresent
-                IncludeGroupPolicy = $IncludeGroupPolicy.IsPresent
-            }
-
-            # Export if path specified
-            if ($OutputPath) {
-                $snapshot.Export($OutputPath)
-                Write-Verbose "Snapshot exported to $OutputPath"
-            }
-
-            return $snapshot
+    try {
+        if ($ComputerName -notin 'localhost','.', $env:COMPUTERNAME) {
+            $connect=@{ComputerName=$ComputerName;ErrorAction='Stop'}
+            if ($Credential) { $connect.Credential=$Credential }
+            try { $session=New-PSSession @connect } catch { throw 'Unable to establish the requested Windows remoting session. Check connectivity and credentials.' }
         }
-        catch {
-            Write-Error "Failed to capture snapshot: $_"
-            throw
-        }
-        finally {
-            if ($session) {
-                Remove-PSSession -Session $session
-                Write-Verbose "Closed remote session"
+        try { $identity=Invoke-WSQuery -Unit Target -Options @{} -Session $session } catch { throw 'Unable to establish trustworthy Windows target identity. Check CIM and registry access.' }
+        if ([string]::IsNullOrWhiteSpace([string]$identity.Id)) { throw 'Trustworthy Windows target identity is unavailable.' }
+        $target=@{Id=$identity.Id;Name=$identity.Name;IdentitySource=$identity.IdentitySource;Version=$identity.Version;Build=$identity.Build}
+        $options.DomainRole=[int]$identity.DomainRole
+        $options.PartOfDomain=[bool]$identity.PartOfDomain
+        $collections=[System.Collections.Generic.List[object]]::new()
+        foreach ($unit in Get-WSUnitDefinitions) {
+            $scope=@{};foreach($key in $unit.Scope.Keys){$scope[$key]=$unit.Scope[$key]}
+            if ($unit.Id -eq 'ScheduledTasks.Tasks') { $scope.TaskArgumentAllowList=$allow; $scope.ArgumentCoverage=$argumentCoverage; $scope.Exclusions=@($argumentCoverage) }
+            if ($unit.Id -eq 'Registry.Values') { $scope.RegistryPaths=$options.RegistryPaths }
+            if ($unit.Option -and -not $options[$unit.Option]) {
+                $collections.Add((New-DDCollection -Id $unit.Id -Status Skipped -Scope $scope -Reason 'Not requested by capture options.'))
+                continue
             }
+            $started=[datetime]::UtcNow.ToString('o')
+            try {
+                $data=Invoke-WSQuery -Unit $unit.Id -Options $options -Session $session
+                if ($data.Status -notin 'Success','Partial','Failed','Unsupported','NotApplicable') { throw 'Invalid Windows provider response.' }
+                $entities=@(foreach($record in @($data.Entities)) {
+                    $properties=ConvertTo-WSMap $record.Properties
+                    $observations=ConvertTo-WSMap $record.Observations
+                    New-DDEntity -EntityType $record.EntityType -Id $record.Id -Name $record.Name -Path $record.Path -CollectionId $unit.Id -Properties $properties -Observations $observations
+                })
+                $collections.Add((New-DDCollection -Id $unit.Id -Status $data.Status -Entities $entities -Scope $scope -Reason ([string]$data.Reason)))
+            } catch {
+                # Never persist an exception message: it may contain task arguments,
+                # registry values, credential details or raw native command output.
+                $collections.Add((New-DDCollection -Id $unit.Id -Status Failed -Scope $scope -Reason 'Windows provider query failed.' -Diagnostics @(@{Code='WindowsQueryFailed';Message='Collection failed. Verify target capability and access; no raw error content was retained.'})))
+            }
+            $collections[$collections.Count-1].StartedAt=$started
+            $collections[$collections.Count-1].CompletedAt=[datetime]::UtcNow.ToString('o')
         }
+        $incomplete=@($collections | Where-Object Status -in 'Partial','Failed','Unsupported')
+        if ($Strict -and $incomplete.Count -gt 0) { throw ('Strict capture requires successful requested applicable units. Incomplete: '+($incomplete.Id -join ', ')) }
+        if ($incomplete.Count -gt 0) { Write-Warning ('Snapshot coverage is incomplete: '+($incomplete.Id -join ', ')) }
+        $profile=@{RequestedCollectors=@($collections | Where-Object Status -ne 'Skipped' | ForEach-Object Id);IncludeRegistry=$options.IncludeRegistry;IncludeScheduledTasks=$options.IncludeScheduledTasks;IncludeGroupPolicy=$options.IncludeGroupPolicy;TaskArgumentAllowList=$allow;RegistryPaths=$options.RegistryPaths;RegistryRecurse=$true}
+        $profile.ArgumentCoverage=$argumentCoverage
+        $profile.RegistryExclusionCoverage=$registryCoverage
+        $profile.Exclusions=@($argumentCoverage,$registryCoverage)
+        $rules=Import-DDRuleSet -Path (Join-Path $PSScriptRoot '../Config/Rules.json')
+        $snapshot=New-DDSnapshot -Technology WinServer -Target $target -Collections @($collections.ToArray()) -CollectionProfile $profile -RuleSet $rules -ProviderVersion '2.0.0'
+        if ($OutputPath) { $null=Export-DDSnapshot -Snapshot $snapshot -Path $OutputPath }
+        return $snapshot
+    } finally {
+        if ($null -ne $session) { Remove-PSSession -Session $session -ErrorAction SilentlyContinue }
     }
 }

@@ -1,0 +1,334 @@
+{
+  "ComparisonPolicies": [
+    {
+      "Id": "win-group-members",
+      "PropertyPath": "/Members",
+      "Mode": "Set",
+      "EntityType": "LocalGroup",
+      "Technology": "WinServer"
+    },
+    {
+      "Id": "win-team-members",
+      "PropertyPath": "/Members",
+      "Mode": "Set",
+      "EntityType": "NetworkTeam",
+      "Technology": "WinServer"
+    },
+    {
+      "Technology": "WinServer",
+      "Mode": "Keyed",
+      "Id": "win-trusts",
+      "PropertyPath": "/Trusts",
+      "EntityType": "DomainTrusts",
+      "Key": "TrustedDomain"
+    },
+    {
+      "Id": "win-task-actions",
+      "PropertyPath": "/OrderedActions",
+      "Mode": "Ordered",
+      "EntityType": "ScheduledTask",
+      "Technology": "WinServer"
+    }
+  ],
+  "RuleSetVersion": "2.0.0",
+  "SeverityRules": [
+    {
+      "Id": "win-Feature",
+      "Severity": "High",
+      "EntityType": "Feature",
+      "Technology": "WinServer"
+    },
+    {
+      "Technology": "WinServer",
+      "Severity": "High",
+      "Priority": 10,
+      "Id": "win-Feature-EntityAdded",
+      "EntityType": "Feature",
+      "ChangeType": "EntityAdded"
+    },
+    {
+      "Technology": "WinServer",
+      "Severity": "High",
+      "Priority": 10,
+      "Id": "win-Feature-EntityRemoved",
+      "EntityType": "Feature",
+      "ChangeType": "EntityRemoved"
+    },
+    {
+      "Id": "win-FirewallRule",
+      "Severity": "High",
+      "EntityType": "FirewallRule",
+      "Technology": "WinServer"
+    },
+    {
+      "Technology": "WinServer",
+      "Severity": "High",
+      "Priority": 10,
+      "Id": "win-FirewallRule-EntityAdded",
+      "EntityType": "FirewallRule",
+      "ChangeType": "EntityAdded"
+    },
+    {
+      "Technology": "WinServer",
+      "Severity": "High",
+      "Priority": 10,
+      "Id": "win-FirewallRule-EntityRemoved",
+      "EntityType": "FirewallRule",
+      "ChangeType": "EntityRemoved"
+    },
+    {
+      "Id": "win-FirewallProfile",
+      "Severity": "High",
+      "EntityType": "FirewallProfile",
+      "Technology": "WinServer"
+    },
+    {
+      "Technology": "WinServer",
+      "Severity": "High",
+      "Priority": 10,
+      "Id": "win-FirewallProfile-EntityAdded",
+      "EntityType": "FirewallProfile",
+      "ChangeType": "EntityAdded"
+    },
+    {
+      "Technology": "WinServer",
+      "Severity": "High",
+      "Priority": 10,
+      "Id": "win-FirewallProfile-EntityRemoved",
+      "EntityType": "FirewallProfile",
+      "ChangeType": "EntityRemoved"
+    },
+    {
+      "Id": "win-LocalUser",
+      "Severity": "High",
+      "EntityType": "LocalUser",
+      "Technology": "WinServer"
+    },
+    {
+      "Technology": "WinServer",
+      "Severity": "High",
+      "Priority": 10,
+      "Id": "win-LocalUser-EntityAdded",
+      "EntityType": "LocalUser",
+      "ChangeType": "EntityAdded"
+    },
+    {
+      "Technology": "WinServer",
+      "Severity": "High",
+      "Priority": 10,
+      "Id": "win-LocalUser-EntityRemoved",
+      "EntityType": "LocalUser",
+      "ChangeType": "EntityRemoved"
+    },
+    {
+      "Id": "win-LocalGroup",
+      "Severity": "High",
+      "EntityType": "LocalGroup",
+      "Technology": "WinServer"
+    },
+    {
+      "Technology": "WinServer",
+      "Severity": "High",
+      "Priority": 10,
+      "Id": "win-LocalGroup-EntityAdded",
+      "EntityType": "LocalGroup",
+      "ChangeType": "EntityAdded"
+    },
+    {
+      "Technology": "WinServer",
+      "Severity": "High",
+      "Priority": 10,
+      "Id": "win-LocalGroup-EntityRemoved",
+      "EntityType": "LocalGroup",
+      "ChangeType": "EntityRemoved"
+    },
+    {
+      "Id": "win-DomainTrusts",
+      "Severity": "High",
+      "EntityType": "DomainTrusts",
+      "Technology": "WinServer"
+    },
+    {
+      "Technology": "WinServer",
+      "Severity": "High",
+      "Priority": 10,
+      "Id": "win-DomainTrusts-EntityAdded",
+      "EntityType": "DomainTrusts",
+      "ChangeType": "EntityAdded"
+    },
+    {
+      "Technology": "WinServer",
+      "Severity": "High",
+      "Priority": 10,
+      "Id": "win-DomainTrusts-EntityRemoved",
+      "EntityType": "DomainTrusts",
+      "ChangeType": "EntityRemoved"
+    },
+    {
+      "Id": "win-GroupPolicy",
+      "Severity": "High",
+      "EntityType": "GroupPolicy",
+      "Technology": "WinServer"
+    },
+    {
+      "Technology": "WinServer",
+      "Severity": "High",
+      "Priority": 10,
+      "Id": "win-GroupPolicy-EntityAdded",
+      "EntityType": "GroupPolicy",
+      "ChangeType": "EntityAdded"
+    },
+    {
+      "Technology": "WinServer",
+      "Severity": "High",
+      "Priority": 10,
+      "Id": "win-GroupPolicy-EntityRemoved",
+      "EntityType": "GroupPolicy",
+      "ChangeType": "EntityRemoved"
+    },
+    {
+      "Id": "win-Service",
+      "Severity": "Medium",
+      "EntityType": "Service",
+      "Technology": "WinServer"
+    },
+    {
+      "Id": "win-NetworkAdapter",
+      "Severity": "Medium",
+      "EntityType": "NetworkAdapter",
+      "Technology": "WinServer"
+    },
+    {
+      "Id": "win-NetworkTeam",
+      "Severity": "Medium",
+      "EntityType": "NetworkTeam",
+      "Technology": "WinServer"
+    },
+    {
+      "Id": "win-Registry",
+      "Severity": "Medium",
+      "EntityType": "Registry",
+      "Technology": "WinServer"
+    },
+    {
+      "Id": "win-ScheduledTask",
+      "Severity": "Medium",
+      "EntityType": "ScheduledTask",
+      "Technology": "WinServer"
+    },
+    {
+      "Id": "win-Disk",
+      "Severity": "Medium",
+      "EntityType": "Disk",
+      "Technology": "WinServer"
+    },
+    {
+      "Id": "win-Volume",
+      "Severity": "Medium",
+      "EntityType": "Volume",
+      "Technology": "WinServer"
+    },
+    {
+      "Technology": "WinServer",
+      "Severity": "Critical",
+      "Priority": 20,
+      "Id": "win-System-Domain",
+      "PropertyPath": "/Domain",
+      "EntityType": "System"
+    },
+    {
+      "Technology": "WinServer",
+      "Severity": "Critical",
+      "Priority": 20,
+      "Id": "win-System-DomainRole",
+      "PropertyPath": "/DomainRole",
+      "EntityType": "System"
+    },
+    {
+      "Technology": "WinServer",
+      "Severity": "Critical",
+      "Priority": 20,
+      "Id": "win-System-PartOfDomain",
+      "PropertyPath": "/PartOfDomain",
+      "EntityType": "System"
+    },
+    {
+      "Technology": "WinServer",
+      "Severity": "Critical",
+      "Priority": 20,
+      "Id": "win-Domain-Domain",
+      "PropertyPath": "/Domain",
+      "EntityType": "Domain"
+    },
+    {
+      "Technology": "WinServer",
+      "Severity": "Critical",
+      "Priority": 20,
+      "Id": "win-Domain-DomainRole",
+      "PropertyPath": "/DomainRole",
+      "EntityType": "Domain"
+    },
+    {
+      "Technology": "WinServer",
+      "Severity": "Critical",
+      "Priority": 20,
+      "Id": "win-Domain-PartOfDomain",
+      "PropertyPath": "/PartOfDomain",
+      "EntityType": "Domain"
+    },
+    {
+      "Technology": "WinServer",
+      "Severity": "Critical",
+      "Priority": 20,
+      "Id": "win-FirewallProfile-Enabled",
+      "PropertyPath": "/Enabled",
+      "EntityType": "FirewallProfile"
+    },
+    {
+      "Technology": "WinServer",
+      "Severity": "Critical",
+      "Priority": 20,
+      "Id": "win-FirewallProfile-DefaultInboundAction",
+      "PropertyPath": "/DefaultInboundAction",
+      "EntityType": "FirewallProfile"
+    },
+    {
+      "Technology": "WinServer",
+      "Severity": "Critical",
+      "Priority": 20,
+      "Id": "win-FirewallRule-Enabled",
+      "PropertyPath": "/Enabled",
+      "EntityType": "FirewallRule"
+    },
+    {
+      "Technology": "WinServer",
+      "Severity": "Critical",
+      "Priority": 20,
+      "Id": "win-FirewallRule-DefaultInboundAction",
+      "PropertyPath": "/DefaultInboundAction",
+      "EntityType": "FirewallRule"
+    },
+    {
+      "Id": "win-system-/OS/Version",
+      "PropertyPath": "/OS/Version",
+      "Severity": "High",
+      "EntityType": "System",
+      "Technology": "WinServer"
+    },
+    {
+      "Id": "win-system-/OS/BuildNumber",
+      "PropertyPath": "/OS/BuildNumber",
+      "Severity": "High",
+      "EntityType": "System",
+      "Technology": "WinServer"
+    },
+    {
+      "Id": "win-timezone",
+      "PropertyPath": "/TimeZone",
+      "Severity": "Medium",
+      "EntityType": "System",
+      "Technology": "WinServer"
+    }
+  ],
+  "SchemaVersion": "1.0"
+}
