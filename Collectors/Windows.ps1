@@ -102,13 +102,19 @@ $script:WSProviderQuery = {
             $entities=@(Get-WindowsFeature -ErrorAction Stop | Where-Object Installed | ForEach-Object { Record 'Feature' $_.Name $_.Name (Select-Fields $_ @('Name','DisplayName','FeatureType','InstallState','Parent','Path')) })
         }
         'Network.Adapters' {
+            # Unbound/hidden adapters need not have NetTCPIP instances. Query each
+            # inventory once: an empty join is valid, but a provider failure is not.
+            $addresses=@(Get-NetIPAddress -ErrorAction Stop)
+            $dnsServers=@(Get-DnsClientServerAddress -ErrorAction Stop)
+            $ipInterfaces=@(Get-NetIPInterface -ErrorAction Stop)
+            $routes=@(Get-NetRoute -ErrorAction Stop)
             $entities=@(Get-NetAdapter -IncludeHidden -ErrorAction Stop | ForEach-Object {
                 $adapter=$_
                 $p=Select-Fields $adapter @('Name','InterfaceDescription','MacAddress','MediaType','AdminStatus')
-                $p.IPAddresses=@(Get-NetIPAddress -InterfaceIndex $adapter.ifIndex -ErrorAction Stop | ForEach-Object { Select-Fields $_ @('IPAddress','PrefixLength','AddressFamily','PrefixOrigin','SuffixOrigin','SkipAsSource') } | Sort-Object { $_.IPAddress })
-                $p.Dns=@(Get-DnsClientServerAddress -InterfaceIndex $adapter.ifIndex -ErrorAction Stop | Sort-Object AddressFamily | ForEach-Object { @{AddressFamily=[string]$_.AddressFamily;ServerAddresses=@($_.ServerAddresses)} })
-                $p.IPInterfaces=@(Get-NetIPInterface -InterfaceIndex $adapter.ifIndex -ErrorAction Stop | Sort-Object AddressFamily | ForEach-Object { Select-Fields $_ @('AddressFamily','Dhcp','InterfaceMetric','AutomaticMetric','NlMtu','Forwarding') })
-                $p.Routes=@(Get-NetRoute -InterfaceIndex $adapter.ifIndex -ErrorAction Stop | ForEach-Object { Select-Fields $_ @('DestinationPrefix','NextHop','RouteMetric','Protocol','Publish') } | Sort-Object { $_.DestinationPrefix },{ $_.NextHop })
+                $p.IPAddresses=@($addresses | Where-Object InterfaceIndex -eq $adapter.ifIndex | ForEach-Object { Select-Fields $_ @('IPAddress','PrefixLength','AddressFamily','PrefixOrigin','SuffixOrigin','SkipAsSource') } | Sort-Object { $_.IPAddress })
+                $p.Dns=@($dnsServers | Where-Object InterfaceIndex -eq $adapter.ifIndex | Sort-Object AddressFamily | ForEach-Object { @{AddressFamily=[string]$_.AddressFamily;ServerAddresses=@($_.ServerAddresses)} })
+                $p.IPInterfaces=@($ipInterfaces | Where-Object InterfaceIndex -eq $adapter.ifIndex | Sort-Object AddressFamily | ForEach-Object { Select-Fields $_ @('AddressFamily','Dhcp','InterfaceMetric','AutomaticMetric','NlMtu','Forwarding') })
+                $p.Routes=@($routes | Where-Object InterfaceIndex -eq $adapter.ifIndex | ForEach-Object { Select-Fields $_ @('DestinationPrefix','NextHop','RouteMetric','Protocol','Publish') } | Sort-Object { $_.DestinationPrefix },{ $_.NextHop })
                 Record 'NetworkAdapter' ([string]$adapter.InterfaceGuid).ToLowerInvariant() $adapter.Name $p (Select-Fields $adapter @('Status','LinkSpeed','ifIndex'))
             })
         }
@@ -153,7 +159,19 @@ $script:WSProviderQuery = {
         }
         'Accounts.Users' {
             if ([int]$Options.DomainRole -ge 4) { return @{Status='NotApplicable';Entities=@();Reason='Win32_ComputerSystem.DomainRole identifies a domain controller without a local SAM.'} }
-            $entities=@(Get-LocalUser -ErrorAction Stop | ForEach-Object { Record 'LocalUser' $_.SID.Value $_.Name (Select-Fields $_ @('Name','FullName','Description','Enabled','AccountExpires','UserMayChangePassword','PasswordRequired','PasswordNeverExpires','PrincipalSource')) (Select-Fields $_ @('LastLogon','PasswordLastSet','PasswordChangeableDate','PasswordExpires')) })
+            $policies=@{}
+            foreach($account in @(Get-CimInstance -ClassName Win32_UserAccount -Filter 'LocalAccount=True' -ErrorAction Stop)) {
+                $sid=[string]$account.SID
+                if ([string]::IsNullOrWhiteSpace($sid) -or $policies.ContainsKey($sid)) { throw 'Local account expiration policy has missing or duplicate SID identity.' }
+                $policies[$sid]=$account.PasswordExpires
+            }
+            $entities=@(Get-LocalUser -ErrorAction Stop | ForEach-Object {
+                $sid=[string]$_.SID.Value
+                if (-not $policies.ContainsKey($sid) -or $policies[$sid] -isnot [bool]) { throw 'Local account expiration policy is unavailable for a collected SID.' }
+                $p=Select-Fields $_ @('Name','FullName','Description','Enabled','AccountExpires','UserMayChangePassword','PasswordRequired','PrincipalSource')
+                $p.PasswordNeverExpires=-not $policies[$sid]
+                Record 'LocalUser' $sid $_.Name $p (Select-Fields $_ @('LastLogon','PasswordLastSet','PasswordChangeableDate','PasswordExpires'))
+            })
         }
         'Accounts.Groups' {
             if ([int]$Options.DomainRole -ge 4) { return @{Status='NotApplicable';Entities=@();Reason='Win32_ComputerSystem.DomainRole identifies a domain controller without a local SAM.'} }
