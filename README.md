@@ -1,10 +1,8 @@
-<img width="2560" height="1280" alt="winsrv-banner-01" src="https://github.com/user-attachments/assets/f057dcbc-7938-468d-af03-458d3c1291a7" />
-
 ---
 title: DriftDetect.WinServer 2.0
 tags: [driftdetect, windows, powershell]
 ---
-
+<img width="2560" height="1280" alt="winsrv-banner-01" src="https://github.com/user-attachments/assets/f057dcbc-7938-468d-af03-458d3c1291a7" />
 
 # DriftDetect.WinServer
 
