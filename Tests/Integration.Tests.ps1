@@ -17,6 +17,16 @@ Describe 'Windows capture and Core integration' {
             $snapshot.ComputerName | Should -Be 'SERVER01'
             $snapshot.SchemaVersion | Should -Be '2.0'
         }
+        It 'requires a fresh account baseline after expiration policy coverage changes' {
+            $legacy=New-WSSnapshot
+            $unit=$legacy.Collections | Where-Object Id -eq 'Accounts.Users'
+            $unit.Scope=@{}; $unit.ScopeFingerprint=Get-DDHash $unit.Scope
+            $current=New-WSSnapshot
+            {Compare-WSSnapshot -BaselineSnapshot $legacy -CurrentSnapshot $current} | Should -Throw '*scope*'
+            $partial=Compare-WSSnapshot -BaselineSnapshot $legacy -CurrentSnapshot $current -AllowPartial
+            ($partial.Coverage | Where-Object CollectionId -eq 'Accounts.Users').Compared | Should -BeFalse
+            $partial.IsComplete | Should -BeFalse
+        }
         It 'IncludeAll enables optional units and normalizes allowlist scope' {
             $snapshot=New-WSSnapshot -IncludeAll -TaskArgumentAllowList '\Ops\Reviewed','\ops\reviewed'
             @($snapshot.Collections | Where-Object Status -eq 'Skipped').Count | Should -Be 0

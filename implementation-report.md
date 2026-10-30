@@ -48,3 +48,7 @@ Trust collection deliberately reports Unsupported for domain member targets beca
 ## Final integration follow-up
 Root completed the review follow-up fixes for direct GPO inventory selection, exact registry secret-name exclusions and scope/profile exclusion notices. The final staged Windows package has 43 passing tests; its provider suite passes 23 tests under real Windows PowerShell 5.1. Combined Core/adapter/integration verification passes 142 tests. See ../review-artifacts/implementation-review-resolutions.md for final evidence and limits.
 
+
+## 2026-10-30 Copilot follow-up
+Version 2.0.1 captures local password expiration policy from Win32_UserAccount joined by SID, joins network inventories by interface index, and bounds manifest and local command imports to Core 1.x. Accounts.Users scope now identifies the corrected policy source; fresh baselines are required for complete comparison with 2.0.0 captures. Regression tests reproduce all three reviewed failures, including both Core majors already loaded. Windows package: 62 passed. Full staged suite: 165 passed, zero failed/skipped. Provider tests under Windows PowerShell 5.1: 36 passed. Parser/manifests and git diff checks pass. New checks remain synthetic; no live server mutation or remote capture was performed.
+

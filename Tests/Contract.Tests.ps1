@@ -4,7 +4,7 @@ BeforeAll {
 }
 Describe 'Windows package contract' {
     It 'requires Core 1 while keeping platform and report modules lazy' {
-        $manifest.ModuleVersion | Should -Be '2.0.0'
+        $manifest.ModuleVersion | Should -Be '2.0.1'
         $manifest.RequiredModules.ModuleName | Should -Contain 'DriftDetect.Core'
         $manifest.RequiredModules.ModuleName | Should -Not -Contain 'PSWriteHTML'
         $manifest.FunctionsToExport | Should -Contain 'Export-WSConfigurationReport'

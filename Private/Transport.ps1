@@ -45,7 +45,7 @@ function Get-WSUnitDefinitions {
         @{Id='Storage.Disks';Option='';Scope=@{}}
         @{Id='Firewall.Profiles';Option='';Scope=@{PolicyStore='ActiveStore'}}
         @{Id='Firewall.Rules';Option='';Scope=@{PolicyStore='ActiveStore';IncludeDisabled=$true}}
-        @{Id='Accounts.Users';Option='';Scope=@{}}
+        @{Id='Accounts.Users';Option='';Scope=@{PasswordExpirationPolicy='Win32_UserAccount.PasswordExpires'}}
         @{Id='Accounts.Groups';Option='';Scope=@{Membership='SID'}}
         @{Id='Domain.Membership';Option='';Scope=@{}}
         @{Id='Domain.Trusts';Option='';Scope=@{Provider='Microsoft_DomainTrustStatus'}}

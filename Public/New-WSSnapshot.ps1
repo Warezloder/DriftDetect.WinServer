@@ -84,7 +84,7 @@ function New-WSSnapshot {
         $profile.RegistryExclusionCoverage=$registryCoverage
         $profile.Exclusions=@($argumentCoverage,$registryCoverage)
         $rules=Import-DDRuleSet -Path (Join-Path $PSScriptRoot '../Config/Rules.json')
-        $snapshot=New-DDSnapshot -Technology WinServer -Target $target -Collections @($collections.ToArray()) -CollectionProfile $profile -RuleSet $rules -ProviderVersion '2.0.0'
+        $snapshot=New-DDSnapshot -Technology WinServer -Target $target -Collections @($collections.ToArray()) -CollectionProfile $profile -RuleSet $rules -ProviderVersion '2.0.1'
         if ($OutputPath) { $null=Export-DDSnapshot -Snapshot $snapshot -Path $OutputPath }
         return $snapshot
     } finally {

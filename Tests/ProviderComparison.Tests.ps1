@@ -15,6 +15,7 @@ BeforeAll {
     function Get-NetIPInterface { }
     function Get-NetRoute { }
     function Get-Volume { }
+    function Get-LocalUser { }
     function New-ProviderFixtureSnapshot($Envelope,$Unit,$Scope=@{}) {
         $entities=@(foreach($record in $Envelope.Entities){New-DDEntity -EntityType $record.EntityType -Id $record.Id -Name $record.Name -CollectionId $Unit -Properties $record.Properties -Observations $record.Observations})
         $collection=New-DDCollection -Id $Unit -Status $Envelope.Status -Scope $Scope -Entities $entities
@@ -25,6 +26,18 @@ BeforeAll {
     }
 }
 Describe 'Normalized Windows provider data compared by real Core' {
+    It 'detects password-never-expires policy changes from real LocalUser-shaped records' {
+        Mock Get-LocalUser { [pscustomobject]@{SID=[pscustomobject]@{Value='S-1-5-21-1-1001'};Name='fixture';PasswordExpires=$null} }
+        Mock Get-CimInstance { [pscustomobject]@{SID='S-1-5-21-1-1001';PasswordExpires=$true} }
+        $a=New-ProviderFixtureSnapshot (Invoke-WSQuery -Unit Accounts.Users -Options @{DomainRole=3}) Accounts.Users
+        Mock Get-CimInstance { [pscustomobject]@{SID='S-1-5-21-1-1001';PasswordExpires=$false} }
+        $b=New-ProviderFixtureSnapshot (Invoke-WSQuery -Unit Accounts.Users -Options @{DomainRole=3}) Accounts.Users
+        $r=Compare-WSSnapshot -BaselineSnapshot $a -CurrentSnapshot $b
+        $r.TotalChanges | Should -Be 1
+        $r.Events[0].PropertyPath | Should -Be '/PasswordNeverExpires'
+        $r.Events[0].OldValue | Should -BeFalse
+        $r.Events[0].NewValue | Should -BeTrue
+    }
     BeforeEach {
         Mock Get-ScheduledTask { [pscustomobject]@{TaskName='Reviewed';TaskPath='\Ops\'} }
         Mock Export-ScheduledTask { $script:FixtureXml }
@@ -59,12 +72,12 @@ Describe 'Normalized Windows provider data compared by real Core' {
     }
     It 'detects ordered per-interface DNS reversal and keeps routes as configuration' {
         Mock Get-NetAdapter { [pscustomobject]@{Name='LAN';InterfaceGuid='adapter-guid';ifIndex=1;Status='Up'} }
-        Mock Get-NetIPAddress { [pscustomobject]@{IPAddress='10.0.0.2';PrefixLength=24;AddressFamily='IPv4'} }
-        Mock Get-NetIPInterface { [pscustomobject]@{AddressFamily='IPv4';Dhcp='Disabled'} }
-        Mock Get-NetRoute { [pscustomobject]@{DestinationPrefix='0.0.0.0/0';NextHop='10.0.0.1';RouteMetric=25} }
-        Mock Get-DnsClientServerAddress { [pscustomobject]@{AddressFamily=2;ServerAddresses=@('10.0.0.10','10.0.0.11')} }
+        Mock Get-NetIPAddress { [pscustomobject]@{InterfaceIndex=1;IPAddress='10.0.0.2';PrefixLength=24;AddressFamily='IPv4'} }
+        Mock Get-NetIPInterface { [pscustomobject]@{InterfaceIndex=1;AddressFamily='IPv4';Dhcp='Disabled'} }
+        Mock Get-NetRoute { [pscustomobject]@{InterfaceIndex=1;DestinationPrefix='0.0.0.0/0';NextHop='10.0.0.1';RouteMetric=25} }
+        Mock Get-DnsClientServerAddress { [pscustomobject]@{InterfaceIndex=1;AddressFamily=2;ServerAddresses=@('10.0.0.10','10.0.0.11')} }
         $a=New-ProviderFixtureSnapshot (Invoke-WSQuery -Unit 'Network.Adapters' -Options @{}) 'Network.Adapters'
-        Mock Get-DnsClientServerAddress { [pscustomobject]@{AddressFamily=2;ServerAddresses=@('10.0.0.11','10.0.0.10')} }
+        Mock Get-DnsClientServerAddress { [pscustomobject]@{InterfaceIndex=1;AddressFamily=2;ServerAddresses=@('10.0.0.11','10.0.0.10')} }
         $b=New-ProviderFixtureSnapshot (Invoke-WSQuery -Unit 'Network.Adapters' -Options @{}) 'Network.Adapters'
         $result=Compare-WSSnapshot -BaselineSnapshot $a -CurrentSnapshot $b
         $result.TotalChanges | Should -Be 1
