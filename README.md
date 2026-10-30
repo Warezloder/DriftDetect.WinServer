@@ -3,6 +3,7 @@ title: DriftDetect.WinServer 2.0
 tags: [driftdetect, windows, powershell]
 ---
 
+<img width="2560" height="1280" alt="winsrv-banner-01" src="https://github.com/user-attachments/assets/f057dcbc-7938-468d-af03-458d3c1291a7" />
 # DriftDetect.WinServer
 
 Collect Windows Server 2022/2025 configuration, save a reviewable snapshot, and compare it through **DriftDetect.Core 1.x**. Client PowerShell 7.0+ is required. Remote collection uses Windows PowerShell 5.1-compatible scriptblocks. Offline import and comparison need only Core; HTML export loads PSWriteHTML >= 0.0.170 on demand.
