@@ -27,6 +27,15 @@ Describe 'Windows capture and Core integration' {
             ($partial.Coverage | Where-Object CollectionId -eq 'Accounts.Users').Compared | Should -BeFalse
             $partial.IsComplete | Should -BeFalse
         }
+        It 'refuses old remoting collection contracts instead of reporting serialization changes as drift' {
+            $legacy=New-WSSnapshot
+            foreach($unit in $legacy.Collections){$unit.ContractVersion='1.0'}
+            $current=New-WSSnapshot
+            {Compare-WSSnapshot -BaselineSnapshot $legacy -CurrentSnapshot $current} | Should -Throw '*contract*'
+            $partial=Compare-WSSnapshot -BaselineSnapshot $legacy -CurrentSnapshot $current -AllowPartial
+            $partial.IsComplete | Should -BeFalse
+            @($partial.Coverage | Where-Object Compared).Count | Should -Be 0
+        }
         It 'IncludeAll enables optional units and normalizes allowlist scope' {
             $snapshot=New-WSSnapshot -IncludeAll -TaskArgumentAllowList '\Ops\Reviewed','\ops\reviewed'
             @($snapshot.Collections | Where-Object Status -eq 'Skipped').Count | Should -Be 0
