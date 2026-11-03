@@ -55,7 +55,7 @@ function New-WSSnapshot {
             if ($unit.Id -eq 'ScheduledTasks.Tasks') { $scope.TaskArgumentAllowList=$allow; $scope.ArgumentCoverage=$argumentCoverage; $scope.Exclusions=@($argumentCoverage) }
             if ($unit.Id -eq 'Registry.Values') { $scope.RegistryPaths=$options.RegistryPaths }
             if ($unit.Option -and -not $options[$unit.Option]) {
-                $collections.Add((New-DDCollection -Id $unit.Id -Status Skipped -Scope $scope -Reason 'Not requested by capture options.'))
+                $collections.Add((New-DDCollection -ContractVersion '1.1' -Id $unit.Id -Status Skipped -Scope $scope -Reason 'Not requested by capture options.'))
                 continue
             }
             $started=[datetime]::UtcNow.ToString('o')
@@ -67,11 +67,11 @@ function New-WSSnapshot {
                     $observations=ConvertTo-WSMap $record.Observations
                     New-DDEntity -EntityType $record.EntityType -Id $record.Id -Name $record.Name -Path $record.Path -CollectionId $unit.Id -Properties $properties -Observations $observations
                 })
-                $collections.Add((New-DDCollection -Id $unit.Id -Status $data.Status -Entities $entities -Scope $scope -Reason ([string]$data.Reason)))
+                $collections.Add((New-DDCollection -ContractVersion '1.1' -Id $unit.Id -Status $data.Status -Entities $entities -Scope $scope -Reason ([string]$data.Reason)))
             } catch {
                 # Never persist an exception message: it may contain task arguments,
                 # registry values, credential details or raw native command output.
-                $collections.Add((New-DDCollection -Id $unit.Id -Status Failed -Scope $scope -Reason 'Windows provider query failed.' -Diagnostics @(@{Code='WindowsQueryFailed';Message='Collection failed. Verify target capability and access; no raw error content was retained.'})))
+                $collections.Add((New-DDCollection -ContractVersion '1.1' -Id $unit.Id -Status Failed -Scope $scope -Reason 'Windows provider query failed.' -Diagnostics @(@{Code='WindowsQueryFailed';Message='Collection failed. Verify target capability and access; no raw error content was retained.'})))
             }
             $collections[$collections.Count-1].StartedAt=$started
             $collections[$collections.Count-1].CompletedAt=[datetime]::UtcNow.ToString('o')
@@ -84,7 +84,7 @@ function New-WSSnapshot {
         $profile.RegistryExclusionCoverage=$registryCoverage
         $profile.Exclusions=@($argumentCoverage,$registryCoverage)
         $rules=Import-DDRuleSet -Path (Join-Path $PSScriptRoot '../Config/Rules.json')
-        $snapshot=New-DDSnapshot -Technology WinServer -Target $target -Collections @($collections.ToArray()) -CollectionProfile $profile -RuleSet $rules -ProviderVersion '2.0.1'
+        $snapshot=New-DDSnapshot -Technology WinServer -Target $target -Collections @($collections.ToArray()) -CollectionProfile $profile -RuleSet $rules -ProviderVersion '2.0.2'
         if ($OutputPath) { $null=Export-DDSnapshot -Snapshot $snapshot -Path $OutputPath }
         return $snapshot
     } finally {

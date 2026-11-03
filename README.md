@@ -1,5 +1,5 @@
 ---
-title: DriftDetect.WinServer 2.0.1
+title: DriftDetect.WinServer 2.0.2
 tags: [driftdetect, windows, powershell]
 ---
 <img width="2560" height="1280" alt="winsrv-banner-01" src="https://github.com/user-attachments/assets/f057dcbc-7938-468d-af03-458d3c1291a7" />
@@ -22,13 +22,15 @@ For remote authentication, pass `-Credential (Get-Credential)` or a PSCredential
 
 Install Core alongside this package through your normal module workflow. For source development, prepend the workspace containing the sibling packages to process-local `PSModulePath`, or use the workspace staging/test script. Shipping module code has no hardcoded sibling fallback and makes no profile changes.
 
-The manifest and module-scoped import both require Core >=1.0.0 and <2.0.0. Other Core majors may coexist in the session without being used by this adapter.
+The manifest and module-scoped import both require Core >=1.0.1 and <2.0.0. Other Core majors may coexist in the session without being used by this adapter.
 
 Version 2.0.1 corrects local-user password expiration policy collection: the boolean comes from local Win32_UserAccount records joined by SID, while the expiry timestamp remains an observation. Missing or invalid policy data fails the account unit. **Capture a fresh Windows baseline after upgrading from 2.0.0**: the Accounts.Users scope now identifies the policy source. Strict comparison refuses the old account scope; AllowPartial excludes that unit and marks the result incomplete.
 
 Network capture joins complete IP, DNS, IP-interface and route inventories by interface index. Hidden adapters without TCP/IP configuration retain empty lists instead of failing the whole unit. Genuine inventory query failures still fail collection.
 
 ## Capture and coverage
+
+Version 2.0.2 requires Core 1.0.1, which preserves remoted lists as arrays instead of serializing their `Capacity`, `Count`, and `SyncRoot` metadata. This fixes DNS and other nested collections while retaining empty lists and DNS preference order. All Windows collection contracts are now 1.1 because remoting can affect lists in any collector. **Capture a fresh baseline after upgrading from 2.0.1 or earlier.** Old snapshots remain readable for reports; comparison rejects their old contracts. `-AllowPartial` excludes incompatible units and cannot establish a clean result when none remain comparable. Do not edit the old contract versions to bypass this check.
 
 All existing capture parameters remain: `ComputerName`, `Credential`, `IncludeRegistry`, `IncludeScheduledTasks`, `IncludeGroupPolicy`, and `OutputPath`. `IncludeAll` enables the three optional collectors. `Strict` terminates if any requested applicable collection unit is Failed, Partial, or Unsupported. Without Strict, useful data is retained and incomplete coverage raises a warning.
 

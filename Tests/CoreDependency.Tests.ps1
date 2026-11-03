@@ -21,7 +21,7 @@ try {
 '@ | Set-Content -LiteralPath $script:Runner -Encoding utf8
     function Invoke-DependencyScenario([string]$Scenario) {
         $fixture=Join-Path $TestDrive $Scenario
-        foreach($version in $(if($Scenario -eq 'OnlyV2'){@('2.0.0')}else{@('1.0.0','1.9.0','2.0.0')})){
+        foreach($version in $(if($Scenario -eq 'OnlyV2'){@('2.0.0')}elseif($Scenario -eq 'OnlyOldCore'){@('1.0.0')}elseif($Scenario -eq 'OnlyFixedCore'){@('1.0.1')}else{@('1.0.0','1.9.0','2.0.0')})){
             $folder=Join-Path $fixture ('DriftDetect.Core/'+$version)
             $null=New-Item -ItemType Directory -Path $folder -Force
             $source="function Import-DDSnapshot { param([string]`$Path) [pscustomobject]@{Technology=`$Path;CoreVersion='$version'} }; Export-ModuleMember -Function Import-DDSnapshot"
@@ -43,5 +43,16 @@ Describe 'Supported Core major version selection' {
         $result=Invoke-DependencyScenario OnlyV2
         $result.Success | Should -BeFalse
         $result.Error | Should -Match 'DriftDetect.Core'
+    }
+}
+
+Describe 'Core remoting fix dependency' {
+    It 'rejects Core 1.0.0 which serializes remote arrays as maps' {
+        (Invoke-DependencyScenario OnlyOldCore).Success | Should -BeFalse
+    }
+    It 'accepts the minimum fixed Core version' {
+        $result=Invoke-DependencyScenario OnlyFixedCore
+        $result.Success | Should -BeTrue -Because $result.Error
+        $result.CoreVersion | Should -Be '1.0.1'
     }
 }

@@ -70,15 +70,23 @@ Describe 'Normalized Windows provider data compared by real Core' {
         $result.Changes.PropertyPath | Should -Contain '/Principals/Principal/UserId'
         $result.Changes.PropertyPath | Should -Contain '/Triggers/TimeTrigger/StartBoundary'
     }
-    It 'detects ordered per-interface DNS reversal and keeps routes as configuration' {
+    It 'detects ordered DNS reversal and keeps routes with CLIXML transport=<Remote>' -ForEach @(@{Remote=$false},@{Remote=$true}) {
         Mock Get-NetAdapter { [pscustomobject]@{Name='LAN';InterfaceGuid='adapter-guid';ifIndex=1;Status='Up'} }
         Mock Get-NetIPAddress { [pscustomobject]@{InterfaceIndex=1;IPAddress='10.0.0.2';PrefixLength=24;AddressFamily='IPv4'} }
         Mock Get-NetIPInterface { [pscustomobject]@{InterfaceIndex=1;AddressFamily='IPv4';Dhcp='Disabled'} }
         Mock Get-NetRoute { [pscustomobject]@{InterfaceIndex=1;DestinationPrefix='0.0.0.0/0';NextHop='10.0.0.1';RouteMetric=25} }
         Mock Get-DnsClientServerAddress { [pscustomobject]@{InterfaceIndex=1;AddressFamily=2;ServerAddresses=@('10.0.0.10','10.0.0.11')} }
-        $a=New-ProviderFixtureSnapshot (Invoke-WSQuery -Unit 'Network.Adapters' -Options @{}) 'Network.Adapters'
+        $envelope=Invoke-WSQuery -Unit 'Network.Adapters' -Options @{}
+        if($Remote){$envelope=[System.Management.Automation.PSSerializer]::Deserialize([System.Management.Automation.PSSerializer]::Serialize($envelope,100))}
+        $a=New-ProviderFixtureSnapshot $envelope 'Network.Adapters'
         Mock Get-DnsClientServerAddress { [pscustomobject]@{InterfaceIndex=1;AddressFamily=2;ServerAddresses=@('10.0.0.11','10.0.0.10')} }
-        $b=New-ProviderFixtureSnapshot (Invoke-WSQuery -Unit 'Network.Adapters' -Options @{}) 'Network.Adapters'
+        $envelope=Invoke-WSQuery -Unit 'Network.Adapters' -Options @{}
+        if($Remote){$envelope=[System.Management.Automation.PSSerializer]::Deserialize([System.Management.Automation.PSSerializer]::Serialize($envelope,100))}
+        $b=New-ProviderFixtureSnapshot $envelope 'Network.Adapters'
+        $path=Join-Path $TestDrive "dns-$Remote.json"
+        $null=Export-DDSnapshot $b $path
+        (Get-Content -LiteralPath $path -Raw) | Should -Not -Match 'SyncRoot|Capacity|IsSynchronized'
+        $b=Import-DDSnapshot $path
         $result=Compare-WSSnapshot -BaselineSnapshot $a -CurrentSnapshot $b
         $result.TotalChanges | Should -Be 1
         $result.Changes.PropertyPath | Should -Be '/Dns'
